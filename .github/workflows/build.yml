@@ -1,0 +1,43 @@
+name: Build Installers
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install
+
+      - run: npm run dist
+
+      - name: Upload build artifacts (for workflow_dispatch runs)
+        uses: actions/upload-artifact@v4
+        with:
+          name: recall-rounds-${{ matrix.os }}
+          path: |
+            release/*.exe
+            release/*.dmg
+
+      - name: Attach to GitHub Release (for tag pushes)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.exe
+            release/*.dmg
